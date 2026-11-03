@@ -238,6 +238,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return int(args.func(args) or 0)
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        print(
+            "hint: export your browser cookies to cookies.txt (see README), "
+            "or drop --cookies to scrape anonymously.",
+            file=sys.stderr,
+        )
+        return 2
     except PrivateAccountError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

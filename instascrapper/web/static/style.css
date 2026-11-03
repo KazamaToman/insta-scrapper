@@ -54,6 +54,8 @@ p { margin: 0; }
 ul, ol { margin: 0; padding: 0; }
 code { font-family: var(--mono); font-size: 0.86em; background: rgba(255, 255, 255, 0.06); padding: 1px 5px; border-radius: 5px; }
 .hidden { display: none !important; }
+/* the hidden attribute must beat layout rules like `.stats { display: grid }` */
+[hidden] { display: none !important; }
 .muted { color: var(--muted); }
 .tiny { font-size: 12px; line-height: 1.45; color: var(--muted); }
 

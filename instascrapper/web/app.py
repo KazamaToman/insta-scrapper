@@ -193,8 +193,7 @@ def create_app(
         }
 
     # ------------------------------------------------------------------- profile
-    @app.get("/api/profile/{username}")
-    def profile(username: str, limit: int = 12, include_videos: bool = True) -> Any:
+    def _profile_payload(username: str, limit: int, include_videos: bool) -> Any:
         try:
             username = normalise_username(username)
         except ValueError as exc:
@@ -224,6 +223,15 @@ def create_app(
             return JSONResponse({"error": exc.message, "kind": exc.kind, "status": exc.status}, status_code=status)
         except ValueError as exc:
             return JSONResponse({"error": str(exc), "kind": "not_found"}, status_code=404)
+
+    @app.get("/api/profile")
+    def profile_query(username: str, limit: int = 12, include_videos: bool = True) -> Any:
+        """Same as /api/profile/{username}, but URL-safe for full profile URLs."""
+        return _profile_payload(username, limit, include_videos)
+
+    @app.get("/api/profile/{username}")
+    def profile(username: str, limit: int = 12, include_videos: bool = True) -> Any:
+        return _profile_payload(username, limit, include_videos)
 
     # ---------------------------------------------------------------------- demo
     @app.get("/api/demo")

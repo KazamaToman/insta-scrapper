@@ -121,7 +121,7 @@ Exit codes: `0` success, `1` error or some files failed, `2` bad usage.
 python -m instascrapper serve --port 8000
 ```
 
-- Search a username → profile card + post grid.
+- Search a username, `@handle` or full profile URL → profile card + post grid.
 - Click a tile to preview the caption; the circle in the corner toggles selection.
 - Select posts (or “Download all shown”) → a job starts and streams progress file-by-file.
 - **Library** tab browses everything on disk, with links to `metadata.json` and `posts.csv`.
@@ -257,6 +257,7 @@ python -m unittest discover -s tests -t .
 
 | Symptom | Fix |
 |---|---|
+| `error: cookie file not found` | `--cookies` points at a file that doesn't exist. Export cookies to `cookies.txt` in the folder you run the command from, or drop the flag. |
 | `HTTP 401/403` or “login required” | Export fresh `cookies.txt` and pass `--cookies`. |
 | `HTTP 429` / rate limited | Wait a few minutes, raise `--delay`, lower `--workers`. |
 | `could not reach www.instagram.com` | Instagram is blocked on your network (VPN, corporate, or a sandbox). Try `--proxy`. |
