@@ -45,6 +45,31 @@
     return size.toFixed(1) + " " + units[i];
   };
 
+  const USERNAME_RE = /^[A-Za-z0-9._]{1,30}$/;
+
+  /** Accept "@nasa", "nasa", "instagram.com/nasa/" — reject post links with a helpful message. */
+  function parseTarget(raw) {
+    let value = String(raw || "").trim();
+    if (!value) return { error: "Enter a public username or profile URL." };
+
+    if (/instagram\.com/i.test(value)) {
+      if (/\/(p|reel|reels|tv)\//i.test(value)) {
+        return {
+          error:
+            "That's a post link. Paste a profile URL or username instead — to grab one post, run " +
+            "<code>instascrapper download &lt;post-url&gt;</code> from the CLI.",
+        };
+      }
+      const match = value.match(/instagram\.com\/([^/?#]+)/i);
+      if (!match) return { error: "Couldn't find a username in that URL." };
+      value = match[1];
+    }
+
+    value = value.replace(/^@+/, "").replace(/[/?#].*$/, "").trim();
+    if (!USERNAME_RE.test(value)) return { error: `“${esc(value)}” isn't a valid Instagram username.` };
+    return { username: value };
+  }
+
   const fmtDate = (unix) => {
     if (!unix) return "—";
     return new Date(unix * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -66,6 +91,7 @@
     if (!response.ok) {
       const error = new Error((data && data.error) || `Request failed (${response.status})`);
       error.kind = (data && data.kind) || "http";
+      if (response.status === 404 && !(data && data.error)) error.message = "That request didn't match any server route (404).";
       error.status = response.status;
       throw error;
     }
@@ -108,16 +134,23 @@
   }
 
   /* ----------------------------------------------------------- profile load */
-  async function loadProfile(username) {
-    const name = username.trim();
-    if (!name) return;
+  async function loadProfile(input) {
+    const target = parseTarget(input);
+    if (target.error) {
+      showSkeletons(false);
+      clearProfile();
+      showBanner("error", `<strong>Check that input</strong>${target.error}`);
+      return;
+    }
+    const username = target.username;
     const limit = Number($("#limit").value) || 24;
     hideBanner();
     showSkeletons(true);
     setView("scrape");
+    $("#query").value = username;
 
     try {
-      const data = await api(`/api/profile/${encodeURIComponent(name)}?limit=${limit}`);
+      const data = await api(`/api/profile/${encodeURIComponent(username)}?limit=${limit}`);
       applyProfile(data.profile, data.posts, {
         demo: !!data.demo,
         authenticated: !!data.authenticated,

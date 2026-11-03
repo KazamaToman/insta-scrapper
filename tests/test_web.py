@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from instascrapper import client as client_module
 from instascrapper.errors import NetworkError
+from instascrapper.models import Profile
 from instascrapper.web.app import create_app
 from tests import fake_instagram as fake
 
@@ -68,6 +69,40 @@ class WebAppTests(unittest.TestCase):
         response = self.client.get("/api/profile/someone")
         self.assertEqual(response.status_code, 502)
         self.assertEqual(response.json()["kind"], "network")
+
+    def test_profile_query_accepts_profile_url(self):
+        """Pasting a profile URL must work (a URL can't live in a path segment)."""
+        seen = {}
+
+        def fake_get(username):
+            seen["username"] = username
+            return Profile(id="1", username=username, followers=42)
+
+        self.app.state.client.get_profile = fake_get
+        self.app.state.client.iter_posts = lambda profile, limit=None: iter([])
+        response = self.client.get(
+            "/api/profile", params={"username": "https://www.instagram.com/willow.j.c/"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(seen["username"], "willow.j.c")
+        self.assertEqual(response.json()["profile"]["username"], "willow.j.c")
+
+    def test_profile_path_still_works(self):
+        self.app.state.client.get_profile = lambda username: Profile(id="1", username=username)
+        self.app.state.client.iter_posts = lambda profile, limit=None: iter([])
+        response = self.client.get("/api/profile/nasa")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["profile"]["username"], "nasa")
+
+    def test_post_url_is_rejected_with_400(self):
+        response = self.client.get("/api/profile", params={"username": "https://www.instagram.com/p/C8kLmNoPq/"})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["kind"], "bad_request")
+        self.assertIn("post URL", response.json()["error"])
+
+    def test_missing_cookie_file_fails_fast(self):
+        with self.assertRaises(FileNotFoundError):
+            create_app(download_dir=self.tmp.name, cookies="/tmp/does-not-exist-cookies.txt")
 
     def test_unknown_job(self):
         self.assertEqual(self.client.get("/api/jobs/nope").status_code, 404)
