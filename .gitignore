@@ -1,0 +1,24 @@
+# Downloads and scraped media
+downloads/
+*.part
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Never commit real session cookies
+cookies.txt
+*.session

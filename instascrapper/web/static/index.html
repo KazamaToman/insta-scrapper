@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>instascrapper — public Instagram archive</title>
+<meta name="description" content="Scrape public Instagram profiles and download their posts, captions and metadata.">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23f9ce34'/%3E%3Cstop offset='.5' stop-color='%23ee2a7b'/%3E%3Cstop offset='1' stop-color='%236228d7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='none' stroke='white' stroke-width='2.4'/%3E%3Ccircle cx='23' cy='9' r='2' fill='white'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/" aria-label="instascrapper home">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="26" height="26">
+        <defs>
+          <linearGradient id="brand-grad" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#f9ce34"/><stop offset=".5" stop-color="#ee2a7b"/><stop offset="1" stop-color="#6228d7"/>
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="9" fill="url(#brand-grad)"/>
+        <circle cx="16" cy="16" r="6.5" fill="none" stroke="#fff" stroke-width="2.4"/>
+        <circle cx="23" cy="9" r="2" fill="#fff"/>
+      </svg>
+    </span>
+    <span class="brand-name">insta<em>scrapper</em></span>
+  </a>
+
+  <form id="search-form" class="search" autocomplete="off" spellcheck="false">
+    <svg class="search-icon" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M16.5 16.5 21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <input id="query" name="q" type="text" placeholder="Public account or profile URL — e.g. nasa" aria-label="Instagram username">
+    <div class="search-divider"></div>
+    <label class="limit-label" title="How many posts to load">
+      <select id="limit" aria-label="Number of posts to load">
+        <option value="12">12 posts</option>
+        <option value="24" selected>24 posts</option>
+        <option value="60">60 posts</option>
+        <option value="120">120 posts</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" id="search-btn" type="submit">Scrape</button>
+  </form>
+
+  <nav class="tabs" aria-label="Views">
+    <button class="tab is-active" data-view="scrape" type="button">Scrape</button>
+    <button class="tab" data-view="library" type="button">Library <span class="pill" id="lib-count" hidden>0</span></button>
+  </nav>
+
+  <div class="session" id="session" title="Session status">
+    <span class="dot"></span><span class="session-text">anonymous</span>
+  </div>
+</header>
+
+<main id="view-scrape" class="view is-active">
+  <aside class="sidebar">
+    <section class="card profile-card" id="profile-card">
+      <div class="avatar placeholder-avatar" id="avatar"></div>
+      <h2 class="profile-name" id="p-name">No account loaded</h2>
+      <div class="profile-handle" id="p-handle">Search a public profile to begin</div>
+      <div class="stats" id="p-stats" hidden>
+        <div><strong id="stat-posts">0</strong><span>posts</span></div>
+        <div><strong id="stat-followers">0</strong><span>followers</span></div>
+        <div><strong id="stat-following">0</strong><span>following</span></div>
+      </div>
+      <p class="bio" id="p-bio" hidden></p>
+      <div class="profile-actions" id="p-actions" hidden>
+        <button class="btn btn-primary btn-block" id="download-all" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 20h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download all shown
+        </button>
+        <a class="btn btn-ghost btn-block" id="open-instagram" href="#" target="_blank" rel="noopener noreferrer">View on Instagram ↗</a>
+      </div>
+    </section>
+
+    <section class="card tips">
+      <h3>How it works</h3>
+      <ol>
+        <li>Only <strong>public</strong> accounts — nothing private is ever fetched.</li>
+        <li>Files land in <code>downloads/&lt;username&gt;/</code> with captions, likes and dates.</li>
+        <li>Videos and carousels are included; re-runs skip what you already have.</li>
+      </ol>
+      <p class="tiny">Instagram throttles anonymous traffic. For big archives export your browser cookies to <code>cookies.txt</code> and start with <code>--cookies</code>.</p>
+    </section>
+  </aside>
+
+  <section class="content">
+    <div class="banner hidden" id="banner"></div>
+
+    <div class="hero" id="hero">
+      <p class="eyebrow">Public data archiver</p>
+      <h1>Download the posts behind<br><span class="grad-text">any public Instagram profile.</span></h1>
+      <p class="lede">Images, videos, carousels, captions and engagement stats — saved to a tidy folder tree, or straight into this browser library.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg" id="hero-demo" type="button">Load demo dataset</button>
+        <span class="hero-hint">or paste a username above</span>
+      </div>
+      <ul class="hero-points">
+        <li><span>01</span> Scrape a profile</li>
+        <li><span>02</span> Pick the posts</li>
+        <li><span>03</span> Download media + metadata</li>
+      </ul>
+    </div>
+
+    <div class="toolbar hidden" id="toolbar">
+      <label class="check-all">
+        <input type="checkbox" id="select-all">
+        <span class="checkbox"></span>
+        <span id="selected-label">0 selected</span>
+      </label>
+      <div class="filters" role="group" aria-label="Filter">
+        <button class="chip is-active" data-filter="all" type="button">All</button>
+        <button class="chip" data-filter="image" type="button">Images</button>
+        <button class="chip" data-filter="video" type="button">Videos</button>
+        <button class="chip" data-filter="carousel" type="button">Carousels</button>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-ghost btn-sm" id="copy-json" type="button" title="Copy post metadata as JSON">Copy JSON</button>
+        <button class="btn btn-secondary btn-sm" id="toolbar-download" type="button" disabled>Download selected</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="grid skeletons hidden" id="skeletons"></div>
+    <div class="empty hidden" id="empty"></div>
+  </section>
+</main>
+
+<main id="view-library" class="view">
+  <aside class="sidebar">
+    <section class="card">
+      <div class="card-head">
+        <h3>Library</h3>
+        <span class="muted tiny" id="lib-root"></span>
+      </div>
+      <ul class="account-list" id="account-list"></ul>
+      <div class="empty-small hidden" id="lib-empty">
+        Nothing downloaded yet.<br><span class="tiny">Scrape a profile and hit download.</span>
+      </div>
+    </section>
+  </aside>
+  <section class="content">
+    <div class="lib-head hidden" id="lib-head">
+      <div>
+        <h2 id="lib-title">@account</h2>
+        <p class="muted" id="lib-meta"></p>
+      </div>
+      <div class="lib-actions">
+        <a class="btn btn-ghost btn-sm" id="lib-metadata" href="#" download>metadata.json</a>
+        <a class="btn btn-ghost btn-sm" id="lib-csv" href="#" download>posts.csv</a>
+      </div>
+    </div>
+    <div class="grid files" id="lib-grid"></div>
+    <div class="hero" id="lib-placeholder">
+      <p class="eyebrow">Local archive</p>
+      <h1>Your downloads,<br><span class="grad-text">browsable.</span></h1>
+      <p class="lede">Everything you scrape lands here — thumbnails, file sizes and the metadata index.</p>
+    </div>
+  </section>
+</main>
+
+<div class="selection-bar" id="selection-bar">
+  <span><strong id="sel-count">0</strong> selected</span>
+  <button class="btn btn-primary" id="sel-download" type="button">Download</button>
+</div>
+
+<aside class="job-panel" id="job-panel" aria-live="polite">
+  <header class="job-head">
+    <div>
+      <strong id="job-title">Downloading</strong>
+      <span class="job-sub" id="job-sub">starting…</span>
+    </div>
+    <div class="job-actions">
+      <button class="icon-btn" id="job-cancel" type="button" title="Cancel">✕</button>
+      <button class="icon-btn hidden" id="job-close" type="button" title="Close">✕</button>
+    </div>
+  </header>
+  <div class="progress"><div class="progress-fill" id="job-progress"></div></div>
+  <ul class="job-files" id="job-files"></ul>
+  <footer class="job-foot">
+    <span id="job-stats"></span>
+    <button class="btn btn-ghost btn-sm" id="job-view" type="button">Open library</button>
+  </footer>
+</aside>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Post preview">
+  <button class="modal-close" id="modal-close" type="button" aria-label="Close">✕</button>
+  <button class="modal-nav prev" id="modal-prev" type="button" aria-label="Previous">‹</button>
+  <button class="modal-nav next" id="modal-next" type="button" aria-label="Next">›</button>
+  <figure class="modal-body">
+    <div class="modal-media" id="modal-media"></div>
+    <figcaption class="modal-caption">
+      <div class="modal-meta" id="modal-meta"></div>
+      <p id="modal-text"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary btn-sm" id="modal-download" type="button">Download this post</button>
+        <a class="btn btn-ghost btn-sm" id="modal-link" href="#" target="_blank" rel="noopener noreferrer">Open post ↗</a>
+      </div>
+    </figcaption>
+  </figure>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js" defer></script>
+</body>
+</html>

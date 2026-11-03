@@ -1,0 +1,10 @@
+# Netscape-format cookie file — copy to cookies.txt and fill with your own values.
+#
+# Export it from a logged-in browser with a "Get cookies.txt" extension, or read
+# the sessionid / csrftoken / ds_user_id cookies from DevTools → Application →
+# Cookies → https://www.instagram.com and paste them below.
+#
+# Domain            Flag  Path  Secure  Expiry      Name         Value
+.instagram.com      TRUE  /     TRUE    1900000000  sessionid    <your sessionid>
+.instagram.com      TRUE  /     TRUE    1900000000  csrftoken    <your csrftoken>
+.instagram.com      TRUE  /     TRUE    1900000000  ds_user_id   <your numeric user id>
